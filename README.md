@@ -32,3 +32,18 @@ a vm to pycharm instead of dual booting.
 https://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x
 
 https://intellij-support.jetbrains.com/hc/en-us/community/posts/360003435280-X11-Forwarding-in-PyCharm\
+
+Convenience for running as root:
+./python_run.sh create_advice_dataset.py 
+
+i think when i create the original dataset, i shouldn't modify the original images.
+
+and then when training/analyzing, you can modify them.
+
+i also think that there should be scripts that can be used to "clean up" the bad data. like if you miss,
+specific to breakout, you can see the score down. you can probably remove that bit of data manually
+from training by detecting image changes from the top. almost like creating an additional label after the
+training phase.
+
+https://esmithy.net/2015/05/05/rundebug-as-root-in-pycharm/
+
