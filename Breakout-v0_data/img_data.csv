@@ -1,4 +1,4 @@
-img_file_name, action, episode, step, reward
+img_file_name,action,episode,step,reward
 0.jpg, 1, 0, 0, 0.0
 1.jpg, 1, 0, 1, 0.0
 2.jpg, 1, 0, 2, 0.0

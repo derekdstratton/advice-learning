@@ -22,11 +22,11 @@ except OSError:
 
 img_data_file_path = path + "/img_data.csv"
 img_data = open(img_data_file_path, "w+")
-img_data.write("img_file_name, action, episode, step, reward" + "\n")
+img_data.write("img_file_name,action,episode,step,reward" + "\n")
 
 episode_data_file_path = path + "/episode_data.csv"
 episode_data = open(episode_data_file_path, "w+")
-episode_data.write("episode, episode_reward"+ "\n")
+episode_data.write("episode,episode_reward"+ "\n")
 
 for episode in range(0, 100):
     # convert rgb to grayscale
