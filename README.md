@@ -47,3 +47,28 @@ training phase.
 
 https://esmithy.net/2015/05/05/rundebug-as-root-in-pycharm/
 
+image detection on this problem:
+
+I feel like the differences in the images are really small,
+which makes it not really learn... Tiny discrepancies mean that it's
+always losing, and it's not really getting any closer.
+
+Is ~500 left or right input images too few? Does this problem
+need more data? More layers in the CNN? Better layers?
+
+Is a 3D CNN too complex to quickly find the small ball and
+paddle both moving at the same time?
+
+Does there need to be an intermediate step:
+First, detect the objects and their locations. (unsupervised?)
+http://e2crawfo.github.io/pdfs/spair_aaai_2019.pdf
+Second, use this info with action labels.
+
+It's even harder since the only relative locality that matters
+is such that the ball is within this really far reach of the
+paddle... 
+
+https://medium.com/datadriveninvestor/small-objects-detection-problem-c5b430996162
+
+
+
