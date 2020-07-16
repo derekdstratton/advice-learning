@@ -7,7 +7,7 @@ import time
 import keyboard as keyboard
 from PIL import Image
 
-game = 'Breakout-v0'
+game = 'CarRacing-v0'
 env = gym.make(game)
 env.reset()
 frame_id = 0

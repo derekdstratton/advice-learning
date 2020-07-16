@@ -7,7 +7,7 @@ import os
 from PIL import Image
 import numpy as np
 
-num_frames = 8
+num_frames = 4
 
 class AdviceDataset(Dataset):
     def __init__(self):
@@ -90,10 +90,8 @@ model2 = torch.nn.Sequential(
 model3 = torch.nn.Sequential(
     torch.nn.Conv3d(in_channels=1, out_channels=5, kernel_size=3),
     torch.nn.ReLU(),
-    torch.nn.Conv3d(in_channels=5, out_channels=25, kernel_size=3),
-    torch.nn.ReLU(),
     Flatten(),
-    torch.nn.Linear((height-4) * (width-4) * (num_frames-4) * 25, 3), # use the formula for CNN shape!
+    torch.nn.Linear((height-2) * (width-2) * (num_frames-2) * 5, 3), # use the formula for CNN shape!
     torch.nn.Softmax() #softmax or sigmoid???
 )
 #
@@ -114,44 +112,12 @@ dataloader = DataLoader(adv_dataset, batch_size=1, shuffle=True)
 # give weight to each class in loss function for balance:
 
 loss_fn = torch.nn.CrossEntropyLoss(weight=weights_balanced)
-optimizer = torch.optim.Adam(model2.parameters(), lr=1e-5)
+# optimizer = torch.optim.Adam(model2.parameters(), lr=1e-5)
 optimizer3 = torch.optim.Adam(model3.parameters(), lr=1e-5)
 
 running_loss = 0
 
-# TODO: initialize weights to be [0, 1]? Or at least so they produce values between [0, 1]
-
-# for epoch in range(4):
-#     print("epoch " + str(epoch))
-#     running_loss = 0
-#     for index, tensor_batch in enumerate(dataloader):
-#         # print(model2(tensor_batch).shape)
-#         # print(index, tensor_batch.size())
-#         # Forward pass: compute predicted y by passing x to the model.
-#         # y_true = np.array(df[index*4:index*4+4])
-#         y_true = torch.tensor(np.array(df[index*4:index*4+4]))
-#         y_pred = model2(tensor_batch)
-#
-#         # Compute and print loss.
-#         # todo: should i use argmax here? i dont think so...
-#         # https://github.com/pytorch/pytorch/issues/5554
-#         # loss = loss_fn(y_pred, y_true) #bcelosswithlogits
-#         loss = loss_fn(y_pred, torch.argmax(y_true, dim=1).reshape((4,))) #categoricalcross
-#         # print(loss.item())
-#
-#         optimizer.zero_grad()
-#         loss.retain_grad()
-#         loss.backward()
-#         # print(y_true)
-#         print(y_pred)
-#         optimizer.step()
-#
-#         running_loss += loss.item()
-#         if index % 200 == 199:
-#             print(running_loss)
-#             running_loss = 0
-
-for epoch in range(10):
+for epoch in range(1000):
     print("epoch " + str(epoch))
     running_loss = 0
     misses = 0
@@ -168,11 +134,20 @@ for epoch in range(10):
         # y_true = np.array(df[index*4:index*4+4])
         y_true = torch.tensor(np.array(df.iloc[index]))
         y_pred = model3(tensor_batch.reshape(1, 1, num_frames, height, width))
+        # if using 3d CNN, this should be 5D instead of 4D input
 
         # Compute and print loss.
         # todo: should i use argmax here? i dont think so...
         # https://github.com/pytorch/pytorch/issues/5554
         y_true_modded = torch.argmax(y_true).reshape((1,))
+
+        if index == len(adv_dataset)-1:
+            print(running_loss)
+            print("misses: " + str(misses) + ", hits: " + str(hits))
+
+        if y_true_modded[0] == 0:
+            continue
+
         # y_true_modded = y_true_modded.double()
         # y_true_modded.requires_grad_(True)
         loss = loss_fn(y_pred, y_true_modded) # just compare the last output
@@ -182,8 +157,8 @@ for epoch in range(10):
         if torch.argmax(y_pred).item() == y_true_modded[0] and y_true_modded[0] != 0:
             hits += 1
 
-        if y_true_modded[0] != 0:
-            print(y_pred, y_true)
+        # if y_true_modded[0] != 0:
+        #     print(y_pred, y_true)
 
         optimizer3.zero_grad()
         loss.retain_grad()
@@ -192,6 +167,3 @@ for epoch in range(10):
         optimizer3.step()
 
         running_loss += loss.item() # this detaches the tensor???
-        if index == len(adv_dataset)-1:
-            print(running_loss)
-            print("misses: " + str(misses) + ", hits: " + str(hits))
