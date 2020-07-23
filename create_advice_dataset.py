@@ -6,9 +6,14 @@ import time
 # make a mapping of keys to actions (json?)
 import keyboard as keyboard
 from PIL import Image
+from nes_py.wrappers import JoypadSpace
+import gym_super_mario_bros
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 
-game = 'Breakout-v0'
+game = 'SuperMarioBros-v3'
 env = gym.make(game)
+env = JoypadSpace(env, SIMPLE_MOVEMENT)
+
 env.reset()
 frame_id = 0
 path = game + "_data" # make this configurable, probably set to the name of the game! Command Line option ideal
@@ -22,11 +27,11 @@ except OSError:
 
 img_data_file_path = path + "/img_data.csv"
 img_data = open(img_data_file_path, "w+")
-img_data.write("img_file_name, action, episode, step, reward" + "\n")
+img_data.write("img_file_name,action,episode,step,reward" + "\n")
 
 episode_data_file_path = path + "/episode_data.csv"
 episode_data = open(episode_data_file_path, "w+")
-episode_data.write("episode, episode_reward"+ "\n")
+episode_data.write("episode,episode_reward"+ "\n")
 
 for episode in range(0, 100):
     # convert rgb to grayscale
@@ -37,11 +42,19 @@ for episode in range(0, 100):
     while True:
         try:
             env.render()
-            action = 1
+            action = 0
             if keyboard.is_pressed('left'):
-                action = 3
-            elif keyboard.is_pressed('right'):
+                action = 6
+            elif keyboard.is_pressed('right') and keyboard.is_pressed('z') and keyboard.is_pressed('x'):
+                action = 4
+            elif keyboard.is_pressed('right') and keyboard.is_pressed('z'):
                 action = 2
+            elif keyboard.is_pressed('right') and keyboard.is_pressed('x'):
+                action = 3
+            elif keyboard.is_pressed('z'):
+                action = 5
+            elif keyboard.is_pressed('right'):
+                action = 1
             state2, reward, done, info = env.step(action)
             img = Image.fromarray(state2)
             img.save(path + "/images/" + str(frame_id) + ".jpg") # consider more idiomatic file path construction?
@@ -56,8 +69,8 @@ for episode in range(0, 100):
             # print(state2)
             # print(reward)
 
-            time.sleep(0.06)
-            if done:
+            time.sleep(0.008)
+            if done or info['flag_get']:
                 break
             if keyboard.is_pressed('q'):
                 episode_data.close()
