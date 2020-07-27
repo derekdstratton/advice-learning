@@ -6,6 +6,13 @@ gym[atari] for breakout
 keyboard
 gym
 
+consider using parsec
+
+it'd be fun to try things out with tas inputs
+
+create_advice_dataset should be a class that can override methods particular to certain use
+cases (for example, override the ending condition for things specific to mario like 'flag_get')
+
 running on windows wwith wsl (and pycharm):
 https://dibranmulder.github.io/2019/09/06/Running-an-OpenAI-Gym-on-Windows-with-WSL/
 DISPLAY=:0 important environment variable
@@ -70,5 +77,7 @@ paddle...
 
 https://medium.com/datadriveninvestor/small-objects-detection-problem-c5b430996162
 
+Remote file transfer options:
 
+https://intellij-support.jetbrains.com/hc/en-us/community/posts/207001235-Disable-automatic-upload
 
