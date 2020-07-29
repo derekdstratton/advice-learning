@@ -9,6 +9,7 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from torch import nn
+import numpy as np
 
 num_possible_actions = 7
 height = 60
@@ -16,9 +17,9 @@ width = 64
 # todo: these values should all be stored in some sort of external model class to be used by trainer and tester
 
 conv1 = torch.nn.Conv2d(in_channels=1, out_channels=5, kernel_size=5)
-torch.nn.init.xavier_uniform(conv1.weight)
+torch.nn.init.uniform_(conv1.weight, a=-0.05, b=0.05)
 lin1 = torch.nn.Linear((height-4) * (width-4) * 5, num_possible_actions)
-torch.nn.init.xavier_uniform(lin1.weight)
+torch.nn.init.uniform_(lin1.weight, a=-0.05, b=0.05)
 
 class Flatten(nn.Module):
     def __init__(self):
@@ -69,8 +70,17 @@ for episode in range(0, 100):
 
 
             action = model2.forward(img.reshape(1, 1, height, width))
-            print(action.detach().numpy())
-            state2, reward, done, info = env.step(action.detach().numpy().argmax())
+            # print(action.detach().numpy())
+
+            # unweighted, deterministic sample best action
+            # state2, reward, done, info = env.step(action.detach().numpy().argmax())
+
+            # weighted, random sampling to choose action
+            weights = action.detach().numpy().reshape(num_possible_actions,)
+            action = np.random.choice(np.arange(0, num_possible_actions), p=weights)
+            print(action)
+            state2, reward, done, info = env.step(action)
+
             step += 1
             state = state2
 
