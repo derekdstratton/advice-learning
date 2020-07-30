@@ -29,13 +29,17 @@ class Flatten(nn.Module):
         x = x.view(x.size()[0], -1)
         return x
 
-model2 = torch.nn.Sequential(
-    conv1,
-    torch.nn.ReLU(),
-    Flatten(),
-    lin1, # use the formula for CNN shape!
-    torch.nn.Softmax() #softmax or sigmoid???
-)
+import models
+class_ = getattr(models, "AdviceModel")
+model2 = class_()
+
+# model2 = torch.nn.Sequential(
+#     conv1,
+#     torch.nn.ReLU(),
+#     Flatten(),
+#     lin1, # use the formula for CNN shape!
+#     torch.nn.Softmax() #softmax or sigmoid???
+# )
 
 game = 'SuperMarioBros-v3'
 env = gym.make(game)
@@ -54,19 +58,22 @@ for episode in range(0, 100):
 
             # from train...
             image = Image.fromarray(state)
+
+            import image_processors
+            img = image_processors.downsample(image)
             # image = image.crop((0, image.height / 2, image.width, image.height))
             # image.save('lol2.jpg')
             # https://www.geeksforgeeks.org/python-pil-image-resize-method/
-            image = image.resize((image.width // 4, image.height // 4), 0)
+            # image = image.resize((image.width // 4, image.height // 4), 0)
             # todo: i'd like to downsample and having more of a "hard" color
             # basically, i want it black or white, and gray should be rounded...
             # image.save('lol1.jpg')
             # arr = arr.astype(dtype=np.dtype('f4'))
-            tt = torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.Grayscale(),
-                    torchvision.transforms.ToTensor()])
-            img = tt(image)
+            # tt = torchvision.transforms.Compose(
+            #     [
+            #         torchvision.transforms.Grayscale(),
+            #         torchvision.transforms.ToTensor()])
+            # img = tt(image)
 
 
             action = model2.forward(img.reshape(1, 1, height, width))
