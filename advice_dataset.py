@@ -5,14 +5,11 @@ import os
 from PIL import Image
 import numpy as np
 import image_processors
-import models
 
-NUM_FRAMES = 1
-#todo: add image processor as string arg
 IMG_PROCESSOR = "downsample"
 
 class AdviceDataset(Dataset):
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path, num_frames):
         # metadata on all of the images
         self.images_csv = pd.read_csv(dataset_path + "/img_data.csv")
         # the root directory containing the images
@@ -24,6 +21,7 @@ class AdviceDataset(Dataset):
             labels_df[str(action)] = np.where(self.images_csv['action'] == action, np.float32(1), np.float32(0))
 
         self.num_possible_actions = len(poss_actions)
+        self.num_frames = num_frames
 
         # todo: it might be good to have a self.y_names field that is an array that corresponds to the correct actions
         # for example, in mario it would be [0, 1, 2, 3, 4, 5, 6]. it can be useful if there is an environment
@@ -36,7 +34,7 @@ class AdviceDataset(Dataset):
 
         img_name = os.path.join(self.root_dir, self.images_csv.iloc[0, 0])
         image = Image.open(img_name)
-        sample_image = image_processors.downsample(image)
+        sample_image = getattr(image_processors, IMG_PROCESSOR)(image)
         self.img_height = sample_image.shape[1]
         self.img_width = sample_image.shape[2]
 
@@ -49,7 +47,9 @@ class AdviceDataset(Dataset):
             idx = idx.tolist()
 
         imgs = []
-        for i in range(NUM_FRAMES - 1, -1, -1):
+
+        # lets you gather multiple frames going back
+        for i in range(self.num_frames - 1, -1, -1):
             if idx - i < 0:
                 j = 0
             else:

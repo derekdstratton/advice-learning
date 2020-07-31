@@ -8,14 +8,15 @@ import image_processors
 import models
 import advice_dataset
 
-NUM_EPOCHS = 3
+NUM_EPOCHS = 1
 NUM_FRAMES = 1 # todo: i'm not sure if frames still work for training. may depend on model, check outputs.
 DATASET_PATH = "SuperMarioBros-v3_data"
 OUTPUT_PATH = "mario-test.model"
+MODEL = "AdviceModel"
 
-adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH)
+adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES)
 
-model = getattr(models, "AdviceModel")(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions)
+model = getattr(models, MODEL)(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions, NUM_FRAMES)
 
 # sample the imbalanced data so that everything is weighted evenly ( 1 / weights )
 weights = adv_dataset.y.numpy().sum(axis=0)

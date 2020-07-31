@@ -17,29 +17,42 @@ import advice_dataset
 # todo: make command line arguments
 DATASET_PATH = "SuperMarioBros-v3_data"
 OUTPUT_PATH = "mario-test.model"
+MODEL = "AdviceModel"
+IMG_PROCESSOR = "downsample"
+NUM_EPOCHS = 100
+NUM_FRAMES = 1
 
-adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH)
+adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES)
 
-model2 = getattr(models, "AdviceModel")(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions)
+model = getattr(models, MODEL)(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions, NUM_FRAMES)
 
 game = 'SuperMarioBros-v3'
 env = gym.make(game)
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
-model2.load_state_dict(torch.load(OUTPUT_PATH))
+model.load_state_dict(torch.load(OUTPUT_PATH))
 
-for episode in range(0, 100):
+for episode in range(0, NUM_EPOCHS):
     state = env.reset()
+
+    prev_frames = []
+    image = Image.fromarray(state)
+    img = getattr(image_processors, IMG_PROCESSOR)(image)
+    for i in range(NUM_FRAMES):
+        prev_frames.append(img)
+
     print("Episode " + str(episode))
     episode_reward = 0
     step = 0
     while True:
         try:
             env.render()
-
             image = Image.fromarray(state)
-            img = image_processors.downsample(image)
+            img = getattr(image_processors, IMG_PROCESSOR)(image)
 
-            action = model2.forward(img.reshape(1, 1, adv_dataset.img_height, adv_dataset.img_width))
+
+            prev_frames.append(img)
+            prev_frames.pop(0)
+            action = model.forward(torch.cat(prev_frames))
             # print(action.detach().numpy())
 
             # unweighted, deterministic sample best action
