@@ -7,14 +7,47 @@ import numpy as np
 import image_processors
 import models
 import advice_dataset
+import os
+import json
+
+# todo: use pathlib instead of os ideally
 
 NUM_EPOCHS = 1
-NUM_FRAMES = 1 # todo: i'm not sure if frames still work for training. may depend on model, check outputs.
+NUM_FRAMES = 1
 DATASET_PATH = "SuperMarioBros-v3_data"
-OUTPUT_PATH = "mario-test.model"
 MODEL = "AdviceModel"
+GAME = "SuperMarioBros-v3" # technically not used, except for in test_advice
 
-adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES)
+# in the future, these can be user configurable
+OUTPUT_MAIN_DIRECTORY = "models"
+if not os.path.exists(OUTPUT_MAIN_DIRECTORY):
+    os.makedirs(OUTPUT_MAIN_DIRECTORY)
+
+OUTPUT_SECOND_DIRECTORY = OUTPUT_MAIN_DIRECTORY + "/" + GAME + "_" + MODEL
+
+
+OUTPUT_SECOND_DIRECTORY_tmp = OUTPUT_SECOND_DIRECTORY
+index = 0
+while (os.path.isdir(OUTPUT_SECOND_DIRECTORY_tmp)):
+    OUTPUT_SECOND_DIRECTORY_tmp = OUTPUT_SECOND_DIRECTORY + "_" + str(index)
+    index += 1
+os.mkdir(OUTPUT_SECOND_DIRECTORY_tmp)
+
+OUTPUT_MODEL_PATH = OUTPUT_SECOND_DIRECTORY_tmp + "/model.pt"
+OUTPUT_INFO_PATH = OUTPUT_SECOND_DIRECTORY_tmp + "/info.json"
+
+IMG_PROCESSOR = "downsample" # todo: make an option to not use any (None)
+
+info = {
+    "num_frames": NUM_FRAMES,
+    "num_epochs": NUM_EPOCHS,
+    "game": GAME,
+    "dataset_path": DATASET_PATH,
+    "model": MODEL,
+    "img_processor": IMG_PROCESSOR
+}
+
+adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES, IMG_PROCESSOR)
 
 model = getattr(models, MODEL)(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions, NUM_FRAMES)
 
@@ -64,6 +97,10 @@ for epoch in range(NUM_EPOCHS):
             print("Total Loss: " + str(running_loss))
             print("Misses: " + str(misses) + ", Hits: " + str(hits))
 
-torch.save(model.state_dict(), OUTPUT_PATH)
+torch.save(model.state_dict(), OUTPUT_MODEL_PATH)
+fp = open(OUTPUT_INFO_PATH, "w")
+json.dump(info, fp) # todo: i could use the := here to be fancy, and use with open() as
+fp.close()
+print("Files output to: " + OUTPUT_SECOND_DIRECTORY_tmp)
 
 # todo: put that if name == main thing to call the function

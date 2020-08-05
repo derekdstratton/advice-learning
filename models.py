@@ -9,6 +9,7 @@ class AdviceModel(torch.nn.Module):
     def __init__(self, height, width, num_possible_actions, num_frames):
         super().__init__()
         # NUM_FRAMES should be 1
+        assert num_frames == 1, "Invalid value for num_frames"
         self.num_frames = num_frames
         self.img_height = height
         self.img_width = width
@@ -27,6 +28,7 @@ class AdviceModel(torch.nn.Module):
 class AdviceModel3d(torch.nn.Module):
     def __init__(self, height, width, num_possible_actions, num_frames):
         self.NUM_FRAMES = num_frames
+        assert num_frames >= 4, "Invalid value for num_frames"
         # NUM_FRAMES should be 4 or more
         self.height = height
         self.width = width

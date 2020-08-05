@@ -6,10 +6,8 @@ from PIL import Image
 import numpy as np
 import image_processors
 
-IMG_PROCESSOR = "downsample"
-
 class AdviceDataset(Dataset):
-    def __init__(self, dataset_path, num_frames):
+    def __init__(self, dataset_path, num_frames, IMG_PROCESSOR):
         # metadata on all of the images
         self.images_csv = pd.read_csv(dataset_path + "/img_data.csv")
         # the root directory containing the images
@@ -34,7 +32,8 @@ class AdviceDataset(Dataset):
 
         img_name = os.path.join(self.root_dir, self.images_csv.iloc[0, 0])
         image = Image.open(img_name)
-        sample_image = getattr(image_processors, IMG_PROCESSOR)(image)
+        self.processor = getattr(image_processors, IMG_PROCESSOR)
+        sample_image = self.processor(image)
         self.img_height = sample_image.shape[1]
         self.img_width = sample_image.shape[2]
 
@@ -56,7 +55,7 @@ class AdviceDataset(Dataset):
                 j = i
             img_name = os.path.join(self.root_dir, self.images_csv.iloc[idx-j, 0])
             image = Image.open(img_name)
-            imgs.append(image_processors.downsample(image))
+            imgs.append(self.processor(image))
 
         # the current x shape is (num_frames???, 1 (grayscale only), height, width)
         # the current y shape is (num_possible_actions,)

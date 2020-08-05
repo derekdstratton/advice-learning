@@ -1,4 +1,5 @@
 # https://pytorch.org/tutorials/beginner/saving_loading_models.html
+import json
 import time
 
 import gym
@@ -15,21 +16,24 @@ import image_processors
 import advice_dataset
 
 # todo: make command line arguments
-DATASET_PATH = "SuperMarioBros-v3_data"
-OUTPUT_PATH = "mario-test.model"
-MODEL = "AdviceModel"
-IMG_PROCESSOR = "downsample"
+INPUT_DIRECTORY = "models/SuperMarioBros-v3_AdviceModel_4"
+with open(INPUT_DIRECTORY + "/info.json", "r") as fp:
+    info = json.load(fp)
+DATASET_PATH = info['dataset_path']
+MODEL_PATH = INPUT_DIRECTORY + "/model.pt"
+MODEL = info['model']
+IMG_PROCESSOR = info['img_processor']
 NUM_EPOCHS = 100
-NUM_FRAMES = 1
+NUM_FRAMES = info['num_frames']
 
-adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES)
+adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES, IMG_PROCESSOR)
 
 model = getattr(models, MODEL)(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions, NUM_FRAMES)
 
-game = 'SuperMarioBros-v3'
+game = info['game']
 env = gym.make(game)
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
-model.load_state_dict(torch.load(OUTPUT_PATH))
+model.load_state_dict(torch.load(MODEL_PATH))
 
 for episode in range(0, NUM_EPOCHS):
     state = env.reset()
