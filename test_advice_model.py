@@ -1,81 +1,82 @@
-# https://pytorch.org/tutorials/beginner/saving_loading_models.html
 import json
 import time
-
 import gym
 import torch
-import torchvision
 from PIL import Image
 from nes_py.wrappers import JoypadSpace
-import gym_super_mario_bros
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-from torch import nn
 import numpy as np
 import models
 import image_processors
 import advice_dataset
 
-# todo: make command line arguments
-INPUT_DIRECTORY = "models/SuperMarioBros-v3_AdviceModel_4"
-with open(INPUT_DIRECTORY + "/info.json", "r") as fp:
-    info = json.load(fp)
-DATASET_PATH = info['dataset_path']
-MODEL_PATH = INPUT_DIRECTORY + "/model.pt"
-MODEL = info['model']
-IMG_PROCESSOR = info['img_processor']
-NUM_EPOCHS = 100
-NUM_FRAMES = info['num_frames']
+def test_model_on_game(model_input_directory, num_epochs=100):
+    # get all of the training info
+    with open(model_input_directory + "/info.json", "r") as fp:
+        training_info = json.load(fp)
 
-adv_dataset = advice_dataset.AdviceDataset(DATASET_PATH, NUM_FRAMES, IMG_PROCESSOR)
+    # load all the information from the model and the info
+    adv_dataset = advice_dataset.AdviceDataset(training_info['dataset_path'], training_info['num_frames'],
+                                               training_info['img_processor'])
+    model = getattr(models, training_info['model'])(adv_dataset.img_height, adv_dataset.img_width,
+                                                    adv_dataset.num_possible_actions, training_info['num_frames'])
+    model.load_state_dict(torch.load(model_input_directory + "/model.pt"))
+    img_processor = getattr(image_processors, training_info['img_processor'])
 
-model = getattr(models, MODEL)(adv_dataset.img_height, adv_dataset.img_width, adv_dataset.num_possible_actions, NUM_FRAMES)
+    # create the game environment
+    env = gym.make(training_info['game'])
+    env = JoypadSpace(env, SIMPLE_MOVEMENT)
 
-game = info['game']
-env = gym.make(game)
-env = JoypadSpace(env, SIMPLE_MOVEMENT)
-model.load_state_dict(torch.load(MODEL_PATH))
+    # the main loop for running the game
+    for episode in range(0, num_epochs):
+        state = env.reset()
+        # a sliding window list containing the frames up to the current one to analyze
+        prev_frames = []
+        image = Image.fromarray(state)
+        img = img_processor(image)
+        # this list should be populated with num_frames frames at all times
+        for i in range(training_info['num_frames']):
+            prev_frames.append(img)
 
-for episode in range(0, NUM_EPOCHS):
-    state = env.reset()
-
-    prev_frames = []
-    image = Image.fromarray(state)
-    img = getattr(image_processors, IMG_PROCESSOR)(image)
-    for i in range(NUM_FRAMES):
-        prev_frames.append(img)
-
-    print("Episode " + str(episode))
-    episode_reward = 0
-    step = 0
-    while True:
-        try:
+        print("Episode " + str(episode))
+        episode_reward = 0
+        step = 0
+        while True:
             env.render()
             image = Image.fromarray(state)
-            img = getattr(image_processors, IMG_PROCESSOR)(image)
+            img = img_processor(image)
 
-
+            # add the new frame on and remove the old frame from the sliding window list
             prev_frames.append(img)
             prev_frames.pop(0)
-            action = model.forward(torch.cat(prev_frames))
-            # print(action.detach().numpy())
+            y_pred = model.forward(torch.cat(prev_frames))
 
             # unweighted, deterministic sample best action
-            # state2, reward, done, info = env.step(action.detach().numpy().argmax())
+            # state2, reward, done, info = env.step(y_pred.detach().numpy().argmax())
 
             # weighted, random sampling to choose action
-            weights = action.detach().numpy().reshape(adv_dataset.num_possible_actions,)
+            weights = y_pred.detach().numpy().reshape(adv_dataset.num_possible_actions,)
             action = np.random.choice(np.arange(0, adv_dataset.num_possible_actions), p=weights)
-            print(action)
-            state2, reward, done, info = env.step(action)
 
+            state2, reward, done, training_info = env.step(action)
+
+            # debugging
+            # print(y_pred.detach().numpy()) # the array of predicted actions at a given state
+            print(action)
+
+            # save various statistics
             step += 1
             state = state2
-
             episode_reward += reward
 
+            # sleep to make viewing easier
             time.sleep(0.008)
-            if done or info['flag_get']:
+
+            # check for end of episode
+            if done or training_info['flag_get']:
                 break
-        except KeyboardInterrupt:
-            print('dont key interrupr bro')
-env.close()
+    env.close()
+
+if __name__ == "__main__":
+    # in the future, parse command line args for convenience running
+    test_model_on_game("models/SuperMarioBros-v3_AdviceModel_5")
