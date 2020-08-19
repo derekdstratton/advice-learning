@@ -1,1 +1,2 @@
 Breakout-v0_data/images/*.jpg filter=lfs diff=lfs merge=lfs -text
+SuperMarioBros-v3_data/images/*.jpg filter=lfs diff=lfs merge=lfs -text
