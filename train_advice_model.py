@@ -7,10 +7,10 @@ import os
 import json
 
 # in the future, create environment variables that represent directories
-# in the future make a configurable parameter for the option to output to a file or not
 # in the future use pathlib instead of os ideally
 MAIN_OUTPUT_DIRECTORY = "models"
 
+# TODO: make a configurable parameter for the option to output to a file or not
 def train_model_on_dataset(model_name, game_name, dataset_path, img_processor, num_frames, num_epochs):
     # handle directories for output
     if not os.path.exists(MAIN_OUTPUT_DIRECTORY):
@@ -88,13 +88,15 @@ def train_model_on_dataset(model_name, game_name, dataset_path, img_processor, n
             # at the end of the epoch, print some stats
             if index == len(adv_dataset) - 1:
                 print("Total Loss: " + str(running_loss))
-                print("Misses: " + str(misses) + ", Hits: " + str(hits))
+                # print("Misses: " + str(misses) + ", Hits: " + str(hits))
+                print("Accuracy: " + str(hits/len(adv_dataset)))
 
     # output info
     torch.save(model.state_dict(), output_model_path)
     with open(output_info_path, "w") as fp:
         json.dump(info, fp)
     print("Files output to: " + output_directory)
+    # todo: consider outputting a json of statistics to analyze (metrics)
     return model, info
 
 if __name__ == "__main__":

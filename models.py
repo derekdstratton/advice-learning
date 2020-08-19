@@ -1,10 +1,6 @@
 import torch
 import torch.nn.functional as F
 
-# todo: consider having a parameter for AdviceModel that dictates the input shape for the model
-# so that way the caller of AdviceModel can reshape based on this.
-# or could the model reshape its own input?
-
 class AdviceModel(torch.nn.Module):
     def __init__(self, height, width, num_possible_actions, num_frames):
         super().__init__()
