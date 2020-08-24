@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo /home/derek/PycharmProjects/advice-learning/venv/bin/python3 "$@"
+sudo /home/derek/PycharmProjects/deepcue/venv/bin/python3 "$@"
