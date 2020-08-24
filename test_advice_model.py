@@ -69,8 +69,8 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True):
             episode_reward += reward
 
             # sleep to make viewing easier if visualizing
-            if visualize:
-                time.sleep(0.008)
+            # if visualize:
+            #     time.sleep(0.008)
 
             # check for end of episode (for mario, it's either when you win or die)
             if done or training_info['flag_get'] or training_info['time'] <= 1 or training_info['life'] < 2:
@@ -97,4 +97,4 @@ def test_model_on_game_from_file(model_input_directory, num_epochs=100, visualiz
 
 if __name__ == "__main__":
     # in the future, parse command line args for convenience running files
-    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel_5", num_epochs=1, visualize=True)
+    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel_33", num_epochs=1, visualize=True)

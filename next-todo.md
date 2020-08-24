@@ -10,12 +10,26 @@ script that takes in a trained advice model (probably a parameter in `train_deep
 
 ### TODO LIST
 1. Train with test and validation set
-2. Try different model architectures (more conv layers, dropout layers, etc)
+    - Random split creates subsets, which are awkward to use
+    with my custom dataset class
+    - I could probably make some Dataset that takes in the
+    original dataset and the indices to wrap it and obtain
+    the correct values while still correctly exposing 
+    variables, but it's bad design for sure.
+2. Try different model architectures (more conv layers, dropout layers, pooling, etc)
+    - This is pretty good. It would be nice to make it more automatic as optional 
+    parameters to pass to the functions. So diff architectures can easily be tested
+    in a notebook.
+    - 2 model functions: 1 for 2D conv, 1 for 3D conv (eventually later i can consider
+    combining them, but for now i want to focus on 2D)
 3. Generalize to different games (will need to load parts based on games)
 4. Make modular approach to preprocessing the training data. This would be pretty unique to each game
 (such as removing deaths).
 5. Other configurables: loss function, learning rate, random sampler methods for dataloader, different batch sizes,
 optimizers
+
+#### Convenience/Style
+- make it so git lfs tracks SuperMario dataset (i messed it up)
 
 -----
 
