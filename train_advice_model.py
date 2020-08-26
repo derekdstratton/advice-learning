@@ -1,169 +1,118 @@
-import torchvision
-from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch
-import pandas as pd
-import os
-from PIL import Image
 import numpy as np
+import models
+import advice_dataset
+import os
+import json
 
-num_frames = 4
+# in the future, create environment variables that represent directories
+# in the future use pathlib instead of os ideally
+MAIN_OUTPUT_DIRECTORY = "models"
 
-class AdviceDataset(Dataset):
-    def __init__(self):
-        self.images_csv = pd.read_csv('Breakout-v0_data/img_data.csv')
-        self.root_dir = 'Breakout-v0_data/images'
+# gpus! it's actually worse unless i start training in batches lol
+print(gpu_avail := torch.cuda.is_available())
+dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    def __len__(self):
-        return len(self.images_csv)
+# TODO: make a configurable parameter for the option to output to a file or not
+def train_model_on_dataset(model_name, game_name, dataset_path, img_processor, num_frames, num_epochs):
+    # handle directories for output
+    if not os.path.exists(MAIN_OUTPUT_DIRECTORY):
+        os.makedirs(MAIN_OUTPUT_DIRECTORY)
+    output_directory = MAIN_OUTPUT_DIRECTORY + "/" + game_name + "_" + model_name
+    output_directory_to_check = output_directory
+    index = 0
+    while os.path.isdir(output_directory_to_check):
+        output_directory_to_check = output_directory + "_" + str(index)
+        index += 1
+    os.mkdir(output_directory_to_check)
+    output_directory = output_directory_to_check
+    output_model_path = output_directory + "/model.pt"
+    output_info_path = output_directory + "/info.json"
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+    # info is for the json object that stores info about the training
+    info = {
+        "num_frames": num_frames,
+        "num_epochs": num_epochs,
+        "game": game_name,
+        "dataset_path": dataset_path,
+        "model": model_name,
+        "img_processor": img_processor
+    }
 
-        imgs = []
-        for i in range(num_frames-1, -1, -1):
-            if idx - i < 0:
-                j = 0
+    # set up the dataset
+    adv_dataset = advice_dataset.AdviceDataset(dataset_path, num_frames, img_processor)
+
+    # set up the model
+    model = getattr(models, model_name)(adv_dataset.img_height, adv_dataset.img_width,
+                                        adv_dataset.num_possible_actions, num_frames)
+    model = model.to(dev)
+
+    # sample the imbalanced data so that everything is weighted evenly ( 1 / weights )
+    weights = adv_dataset.y.numpy().sum(axis=0)
+    weights_balanced = 1. / weights
+    actions = adv_dataset.images_csv['action']
+    samples_weight = torch.tensor(np.array(weights_balanced)[actions])
+    samples_weight = samples_weight.to(dev)
+    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+
+    # create dataloader, loss function, and optimizer
+    dataloader = DataLoader(adv_dataset, batch_size=1, sampler=sampler)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+
+    # main training loop
+    for epoch in range(num_epochs):
+        print("epoch " + str(epoch))
+        running_loss = 0
+        misses = 0
+        hits = 0
+        for index, data in enumerate(dataloader):
+            x, y_true = data
+            x = x.to(dev)
+            y_true = y_true.to(dev)
+
+            # get the model's current prediction
+            y_pred = model(x)
+
+            # compute the loss with CrossEntropyLoss, which takes the argmax of the true label
+            loss = loss_fn(y_pred, torch.argmax(y_true).reshape((1,)))
+
+            # update the weights based on the loss
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # debugging
+            # print(y_pred)
+
+            # accumulate some data
+            if torch.argmax(y_pred).item() == torch.argmax(y_true).item():
+                hits += 1
             else:
-                j = i
-            img_name = os.path.join(self.root_dir, self.images_csv.iloc[idx-j, 0])
-            image = Image.open(img_name)
-            image = image.crop((0, image.height / 2, image.width, image.height))
-            # image.save('lol2.jpg')
-            # https://www.geeksforgeeks.org/python-pil-image-resize-method/
-            image = image.resize((image.width // 4, image.height // 4), 0)
-            # todo: i'd like to downsample and having more of a "hard" color
-            # basically, i want it black or white, and gray should be rounded...
-            # image.save('lol1.jpg')
-            # arr = arr.astype(dtype=np.dtype('f4'))
-            tt = torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.Grayscale(),
-                    torchvision.transforms.ToTensor()])
-            img = tt(image)
-            imgs.append(img)
-        # arr = np.array(image.convert('L'))
-        # arr.resize((1, 210, 160)) # 1 channel, 210 height, 160 width
-        # https://www.quora.com/Why-does-my-convolutional-neural-network-always-produce-the-same-outputs
+                misses += 1
+            running_loss += loss.item()
 
+            # at the end of the epoch, print some stats
+            if index == len(adv_dataset) - 1:
+                print("Total Loss: " + str(running_loss))
+                # print("Misses: " + str(misses) + ", Hits: " + str(hits))
+                print("Accuracy: " + str(hits/len(adv_dataset)))
 
-        return torch.cat(imgs, 0)
-        # return np.array(image.convert('L'))
+    # output info
+    torch.save(model.state_dict(), output_model_path)
+    with open(output_info_path, "w") as fp:
+        json.dump(info, fp)
+    print("Files output to: " + output_directory)
+    # todo: consider outputting a json of statistics to analyze (metrics)
+    return model, info
 
-adv_dataset = AdviceDataset()
-
-# print(adv_dataset[0].shape)
-height = adv_dataset[0].shape[1]
-width = adv_dataset[0].shape[2]
-
-# model = torch.nn.Sequential(
-#     torch.nn.Conv2d(in_channels=1, out_channels=5, kernel_size=5),
-#     torch.nn.ReLU()#,
-#     # torch.nn.Linear(69, 3)
-# )
-#
-# print(model(adv_dataset[0]).shape)
-
-class Flatten(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x):
-        x = x.view(x.size()[0], -1)
-        return x
-
-# https://stackoverflow.com/questions/49433936/how-to-initialize-weights-in-pytorch
-conv1 = torch.nn.Conv2d(in_channels=1, out_channels=5, kernel_size=5)
-torch.nn.init.xavier_uniform(conv1.weight)
-lin1 = torch.nn.Linear((height-4) * (width-4) * 5, 3)
-torch.nn.init.xavier_uniform(lin1.weight)
-
-model2 = torch.nn.Sequential(
-    conv1,
-    torch.nn.ReLU(),
-    Flatten(),
-    lin1, # use the formula for CNN shape!
-    torch.nn.Softmax() #softmax or sigmoid???
-)
-
-model3 = torch.nn.Sequential(
-    torch.nn.Conv3d(in_channels=1, out_channels=5, kernel_size=3),
-    torch.nn.ReLU(),
-    Flatten(),
-    torch.nn.Linear((height-2) * (width-2) * (num_frames-2) * 5, 3), # use the formula for CNN shape!
-    torch.nn.Softmax() #softmax or sigmoid???
-)
-#
-# print(model2(adv_dataset[0]).shape)
-y = adv_dataset.images_csv['action']
-poss_actions = adv_dataset.images_csv['action'].unique()
-df = pd.DataFrame()
-for action in poss_actions:
-    adv_dataset.images_csv[str(action)] = np.where(adv_dataset.images_csv['action']==action,
-                                                   np.float32(1), np.float32(0))
-    df[str(action)] = adv_dataset.images_csv[str(action)]
-
-weights = adv_dataset.images_csv['action'].value_counts()
-weights_balanced = (weights.sum() - weights) / weights.sum()
-weights_balanced = torch.tensor(np.array(weights_balanced)).float()
-weights_balanced = torch.tensor([0., 1., 1.]) # yikes...
-dataloader = DataLoader(adv_dataset, batch_size=1, shuffle=True)
-# give weight to each class in loss function for balance:
-
-loss_fn = torch.nn.CrossEntropyLoss(weight=weights_balanced)
-# optimizer = torch.optim.Adam(model2.parameters(), lr=1e-5)
-optimizer3 = torch.optim.Adam(model3.parameters(), lr=1e-5)
-
-running_loss = 0
-
-for epoch in range(1000):
-    print("epoch " + str(epoch))
-    running_loss = 0
-    misses = 0
-    hits = 0
-    # this is actually wrong, since we miss out on num_frames - 1 / num_frames training samples...
-    for index, tensor_batch in enumerate(dataloader):
-        # if len(tensor_batch) != num_frames:
-        #     print("misses: " + str(misses) + ", hits: " + str(hits))
-        #     # todo: these batches don't account for batching errors
-        #     continue
-        # print(model2(tensor_batch).shape)
-        # print(index, tensor_batch.size())
-        # Forward pass: compute predicted y by passing x to the model.
-        # y_true = np.array(df[index*4:index*4+4])
-        y_true = torch.tensor(np.array(df.iloc[index]))
-        y_pred = model3(tensor_batch.reshape(1, 1, num_frames, height, width))
-        # if using 3d CNN, this should be 5D instead of 4D input
-
-        # Compute and print loss.
-        # todo: should i use argmax here? i dont think so...
-        # https://github.com/pytorch/pytorch/issues/5554
-        y_true_modded = torch.argmax(y_true).reshape((1,))
-
-        if index == len(adv_dataset)-1:
-            print(running_loss)
-            print("misses: " + str(misses) + ", hits: " + str(hits))
-
-        if y_true_modded[0] == 0:
-            continue
-
-        # y_true_modded = y_true_modded.double()
-        # y_true_modded.requires_grad_(True)
-        loss = loss_fn(y_pred, y_true_modded) # just compare the last output
-        # print(loss.item())
-        if torch.argmax(y_pred).item() != y_true_modded[0] and y_true_modded[0] != 0:
-            misses += 1
-        if torch.argmax(y_pred).item() == y_true_modded[0] and y_true_modded[0] != 0:
-            hits += 1
-
-        # if y_true_modded[0] != 0:
-        #     print(y_pred, y_true)
-
-        optimizer3.zero_grad()
-        loss.retain_grad()
-        loss.backward()
-        # print(loss.grad)
-        optimizer3.step()
-
-        running_loss += loss.item() # this detaches the tensor???
+if __name__ == "__main__":
+    train_model_on_dataset(
+        model_name="AdviceModel",
+        game_name="SuperMarioBros-v3",
+        dataset_path="SuperMarioBros-v3_data",
+        img_processor="downsample",
+        num_frames=1,
+        num_epochs=1
+    )

@@ -6,6 +6,12 @@ running on windows wwith wsl (and pycharm):
 https://dibranmulder.github.io/2019/09/06/Running-an-OpenAI-Gym-on-Windows-with-WSL/
 DISPLAY=:0 important environment variable
 
+Lab Machine: `ssh dstratton@134.197.95.144`
+
+`export DISPLAY={my windows IP}:0`
+
+can't test remotely with visuals in PyCharm since there's no x11 forwarding
+
 running keyboard library as root (required for linux):
 
 remotely connecting to another computer:

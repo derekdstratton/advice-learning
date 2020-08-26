@@ -27,6 +27,11 @@ script that takes in a trained advice model (probably a parameter in `train_deep
 (such as removing deaths).
 5. Other configurables: loss function, learning rate, random sampler methods for dataloader, different batch sizes,
 optimizers
+6. Get GPUs working
+    - they work, but theyre slow unless batches of >1 are used so we can actually use
+    it lol
+7. create a `requirements.txt` or something for easy installation: i just needed torch,
+torchvision, and pandas for train. test needs gym, gym-super-mario-bros
 
 #### Convenience/Style
 - make it so git lfs tracks SuperMario dataset (i messed it up)

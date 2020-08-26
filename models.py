@@ -16,7 +16,7 @@ class AdviceModel(torch.nn.Module):
         self.lin1 = torch.nn.Linear(int(np.floor((((self.img_height - 4) - 2 -1)/3)+1)) *
                                     int(np.floor((((self.img_width - 4) - 2 -1)/3)+1)) *
                                     5,
-        num_possible_actions)
+                                    num_possible_actions)
         torch.nn.init.uniform_(self.lin1.weight, a=-0.05, b=0.05)
 
     def forward(self, xb):
