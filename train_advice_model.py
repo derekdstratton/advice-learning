@@ -12,6 +12,9 @@ MAIN_OUTPUT_DIRECTORY = "models"
 
 # gpus! it's actually worse unless i start training in batches lol
 print(gpu_avail := torch.cuda.is_available())
+
+### WARNING: The testability of a model is wrecked if it's using cuda vs if it's using a cpu. just be careful not to
+### remotely train on gpu then test locally on cpu, it will not work.
 dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # TODO: make a configurable parameter for the option to output to a file or not
@@ -114,5 +117,5 @@ if __name__ == "__main__":
         dataset_path="SuperMarioBros-v3_data",
         img_processor="downsample",
         num_frames=1,
-        num_epochs=1
+        num_epochs=20
     )

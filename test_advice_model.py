@@ -97,4 +97,4 @@ def test_model_on_game_from_file(model_input_directory, num_epochs=100, visualiz
 
 if __name__ == "__main__":
     # in the future, parse command line args for convenience running files
-    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel_33", num_epochs=1, visualize=True)
+    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel_34", num_epochs=1, visualize=True)

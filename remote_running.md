@@ -8,7 +8,17 @@ DISPLAY=:0 important environment variable
 
 Lab Machine: `ssh dstratton@134.197.95.144`
 
+To make sure it doesn't fail, try using `screen`
+
+I could also use `scp` to bring trained models back to this to test visually. Or I can just test
+them remotely, either works.
+
+copy a directory: `pscp -r -P 22 dstratton@134.197.95.144:/home/dstratton/PycharmProjects/advice-learning-remote/models/SuperMarioBros-v3_AdviceModel_21 .`
+^ optionally run with `-pw password` for easier life
+
 `export DISPLAY={my windows IP}:0`
+
+local ip: `172.27.42.239`
 
 can't test remotely with visuals in PyCharm since there's no x11 forwarding
 
@@ -19,6 +29,9 @@ use private ip from hostname -I to connect. install openssh-server on it and fol
 
 pycharm doesnt support x11, but you can do it with putty and it works. don't
 be root, instead do sudo venv/bin/python3 run.py
+
+In Putty, set X11 forwarding to true, and in the box put `{local ip}:0` as the destination and it'll 
+work. Also make sure to turn xming on in windows. it sucks if i have bad internet lol
 
 Convenience for running as root:
 ./python_run.sh create_advice_dataset.py 

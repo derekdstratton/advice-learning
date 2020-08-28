@@ -16,6 +16,11 @@ script that takes in a trained advice model (probably a parameter in `train_deep
     original dataset and the indices to wrap it and obtain
     the correct values while still correctly exposing 
     variables, but it's bad design for sure.
+    - when printing accuracy, i think these 2 values are useful. 1 would be absolutely if it got
+    the prediction right or wrong (add 1 if wrong add 0 if right). Another, better way would be
+    to take the probability given to the correct one, and do 1 - x to get the error between the
+    expected and actual, and that gives more credit to being "on the right track", or possibly
+    helping to not be as brutal with conflicting data
 2. Try different model architectures (more conv layers, dropout layers, pooling, etc)
     - This is pretty good. It would be nice to make it more automatic as optional 
     parameters to pass to the functions. So diff architectures can easily be tested
@@ -31,7 +36,10 @@ optimizers
     - they work, but theyre slow unless batches of >1 are used so we can actually use
     it lol
 7. create a `requirements.txt` or something for easy installation: i just needed torch,
-torchvision, and pandas for train. test needs gym, gym-super-mario-bros
+torchvision, and pandas for train. test needs gym, gym-super-mario-bros, idk about create
+8. make jupyter notebooks also run remotely :D
+9. To better my efficiency, instead of having a static number of epochs, dynamically choose the
+number of epochs to keep going until you aren't learning any more
 
 #### Convenience/Style
 - make it so git lfs tracks SuperMario dataset (i messed it up)
