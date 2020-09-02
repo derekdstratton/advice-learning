@@ -6,6 +6,10 @@ to play (maybe called `train_deepq_model.py`)
 4. Incorporate the advice_model to help train deepq faster, as an easy to test
 script that takes in a trained advice model (probably a parameter in `train_deepq_model`)
 
+* What if we used a trained model (trained from deepq) as the base of the rl. and it just does
+rl like normal, except using that as the base? im wondering if that would help at all? Like that's
+the way it makes predictions?
+
 -----
 
 ### TODO LIST
@@ -57,6 +61,9 @@ Second, use this info with action labels.
 It's even harder since the only relative locality that matters
 is such that the ball is within this really far reach of the
 paddle...
+
+try to investigate more about whats going on in the images from a computer vision 
+perspective: filters, intermediate representations, etc.
 
 another thing to consider is that right now it really likes to do things that
 are uncommon since i weighted all the training the same with the weighted

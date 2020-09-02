@@ -1,12 +1,46 @@
+I FINALLY DID IT OMG I THOUGHT I TRIED IT:
+
+First set up a local port forward:
+`ssh -L 6000:134.197.95.144:22 derekstratton@ubuntu.cse.unr.edu`
+I99J&^j91q8fbfnQJld$
 
 
-consider using parsec
+Then just connect!
+`ssh -p 6000 dstratton@localhost`
+
+consider using parsec 
 
 running on windows wwith wsl (and pycharm):
 https://dibranmulder.github.io/2019/09/06/Running-an-OpenAI-Gym-on-Windows-with-WSL/
 DISPLAY=:0 important environment variable
 
 Lab Machine: `ssh dstratton@134.197.95.144`
+
+https://medium.com/@kennch/configure-a-transparent-multi-hop-ssh-connection-fe63437f5a33::wq
+`ssh -A -t derekstratton@ubuntu.cse.unr.edu ssh -A dstratton@134.197.95.144`
+
+^ note, this only works on eduroam, but to get it to work on ethernet i might need to tunnel to 
+the network
+
+ssh derekstratton@ubuntu.cse.unr.edu
+
+ssh -L 0.0.0.0:2222:localhost:22 derekstratton@ubuntu.cse.unr.edu
+ssh -p 2222 derekstratton@localhost
+Actually, I think I can just set up a local port that can be my lab computer...
+
+ssh dynamic port forwarding?
+
+I can tunnel to my lab machine through there, from anywhere!
+
+try configuring pycharm to use putty to tunnel through with some private key file:
+https://www.jetbrains.com/help/idea/configuring-ssh-and-ssl.html#ssh
+
+hippity hoppity with putty or ssh:
+https://serverfault.com/questions/340865/ssh-tunnel-over-multi-hops-using-putty
+https://superuser.com/questions/96489/an-ssh-tunnel-via-multiple-hops
+
+openssh: maybe in the future for windows but prob sticking with putty
+https://www.maketecheasier.com/use-windows10-openssh-client/
 
 To make sure it doesn't fail, try using `screen`
 
@@ -17,6 +51,8 @@ copy a directory: `pscp -r -P 22 dstratton@134.197.95.144:/home/dstratton/Pychar
 ^ optionally run with `-pw password` for easier life
 
 `export DISPLAY={my windows IP}:0`
+
+`export DISPLAY=:0` <-- this command saves lives. for wsl
 
 local ip: `172.27.42.239`
 
