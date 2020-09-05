@@ -9,11 +9,14 @@ import numpy as np
 import models
 import image_processors
 import advice_dataset
+import pandas as pd
 
 # todo: better style to make another method that takes in a model and an info object. more flexible
 
-def test_model_on_game(model, training_info, num_epochs=100, visualize=True):
+def test_model_on_game(model, training_info, num_epochs=100, visualize=True, output_directory=None):
     # get all of the training info
+
+    print(visualize)
 
     # load all the information from the model and the info
     adv_dataset = advice_dataset.AdviceDataset(training_info['dataset_path'], training_info['num_frames'],
@@ -23,6 +26,11 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True):
     # create the game environment
     env = gym.make(training_info['game'])
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
+
+    # collect some data for analysis
+    x_pos_arr = np.zeros(num_epochs)
+
+    farthest = 0
 
     # the main loop for running the game
     for episode in range(0, num_epochs):
@@ -49,15 +57,19 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True):
             prev_frames.pop(0)
             y_pred = model.forward(torch.cat(prev_frames))
 
+            print(y_pred)
             # unweighted, deterministic sample best action (it can get stuck easily if its not perfect)
             # state2, reward, done, info = env.step(y_pred.detach().numpy().argmax())
+
+            # if they don't sum to 1, maybe divide by the sum of all
+            y_pred = y_pred / y_pred.sum()
 
             # weighted, random sampling to choose action
             weights = y_pred.detach().numpy().reshape(adv_dataset.num_possible_actions, )  # maybe this probability can
             # also be adjusted based on the reward?
             action = np.random.choice(np.arange(0, adv_dataset.num_possible_actions), p=weights)
 
-            state2, reward, done, training_info = env.step(action)
+            state2, reward, done, info = env.step(action)
 
             # debugging
             # print(y_pred.detach().numpy()) # the array of predicted actions at a given state
@@ -72,15 +84,26 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True):
             # if visualize:
             #     time.sleep(0.008)
 
+            # use this cause ending x pos is always "40" if lives are < 2, since you reset
+            farthest = max(farthest, info['x_pos'])
+
             # check for end of episode (for mario, it's either when you win or die)
-            if done or training_info['flag_get'] or training_info['time'] <= 1 or training_info['life'] < 2:
+            if done or info['flag_get'] or info['time'] <= 1 or info['life'] < 2:
                 # this is the exit point.
                 print("Episode Reward: " + str(episode_reward))
-                print("Ending X Pos: " + str(training_info['x_pos']))
-                print("Ending Time: " + str(training_info['time']))
+                print("Ending X Pos: " + str(farthest))
+                print("Ending Time: " + str(info['time']))
+                x_pos_arr[episode] = farthest
                 break
-        env.close()
-        # todo: output a json of statistics to analyze (metrics), episode reward array, ending x pos array,
+    env.close()
+
+    df = pd.DataFrame(x_pos_arr, columns=["x_pos"])
+    print(df)
+
+    # todo: output a json of statistics to analyze (metrics), episode reward array, ending x pos array,
+    if output_directory is not None:
+        df.to_csv(output_directory + "/output.csv")
+
 
 def test_model_on_game_from_file(model_input_directory, num_epochs=100, visualize=True):
     # get all of the training info
@@ -92,9 +115,12 @@ def test_model_on_game_from_file(model_input_directory, num_epochs=100, visualiz
                                                training_info['img_processor'])
     model = getattr(models, training_info['model'])(adv_dataset.img_height, adv_dataset.img_width,
                                                     adv_dataset.num_possible_actions, training_info['num_frames'])
-    model.load_state_dict(torch.load(model_input_directory + "/model.pt"))
-    test_model_on_game(model, training_info, num_epochs, visualize)
+
+    # todo: this map device thing is for transferring models trained on a gpu to reloading on a cpu only.
+    # prob should make it more dynamic
+    model.load_state_dict(torch.load(model_input_directory + "/model.pt", map_location=torch.device('cpu')))
+    test_model_on_game(model, training_info, num_epochs, visualize, output_directory=model_input_directory)
 
 if __name__ == "__main__":
     # in the future, parse command line args for convenience running files
-    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel_34", num_epochs=1, visualize=True)
+    test_model_on_game_from_file("models/SuperMarioBros-v3_AdviceModel2Layer_6", num_epochs=1, visualize=True)

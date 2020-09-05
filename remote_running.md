@@ -1,6 +1,6 @@
 I FINALLY DID IT OMG I THOUGHT I TRIED IT:
 
-First set up a local port forward:
+First set up a local port forward: (todo: put my password in the command)
 `ssh -L 6000:134.197.95.144:22 derekstratton@ubuntu.cse.unr.edu`
 I99J&^j91q8fbfnQJld$
 
@@ -8,7 +8,20 @@ I99J&^j91q8fbfnQJld$
 Then just connect!
 `ssh -p 6000 dstratton@localhost`
 
-consider using parsec 
+If you get `key_identification_error`, get into my
+machine and `sudo reboot` it. It means a connection was
+poorly closed maybe. Or it means you closed the terminal with the
+local port open. so do that again? idk honestly.
+
+I think it's okay if the client computer's display tunrs
+off, but it must not go to sleep (change settings).
+
+Bringing files back: (todo: put my password in the command)
+`scp -P 6000 -r dstratton@localhost:PycharmProjects/advice-learning-remote/models/SuperMarioBros-v3_AdviceModel_21 models`
+consider using parsec
+
+There seems to be some interference with port forwarding and X forwarding????
+If local testing with X doesn't work, clsoe ports?
 
 running on windows wwith wsl (and pycharm):
 https://dibranmulder.github.io/2019/09/06/Running-an-OpenAI-Gym-on-Windows-with-WSL/

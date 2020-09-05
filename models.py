@@ -47,7 +47,8 @@ class AdviceModel2Layer(torch.nn.Module):
         xb = F.relu(self.conv1(xb))
         xb = F.relu(self.conv2(xb))
         xb = xb.view(xb.size()[0], -1)
-        xb = F.softmax(self.lin1(xb), dim=1)  # use the formula for CNN shape!
+        # todo: softmax or sigmoid? softmax: all elements sum to 1.
+        xb = torch.sigmoid(self.lin1(xb))  # use the formula for CNN shape!
         return xb
 
 class AdviceModel3d(torch.nn.Module):

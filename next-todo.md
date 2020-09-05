@@ -10,6 +10,34 @@ script that takes in a trained advice model (probably a parameter in `train_deep
 rl like normal, except using that as the base? im wondering if that would help at all? Like that's
 the way it makes predictions?
 
+IDEA:
+Do I even need traditional reinforcement learning to use on my advice model? What if I
+do something like this? Use my probabilistic version of picking advice and keep running
+it over and over on the game. Except it's still training and learning, but it's learning
+from itself. If it does well (based on some reward function), then you can adjust on 
+what it just did as example. If it does poorly, you can just keep letting probability 
+find new things. If you really really get stuck, maybe even lower probabilities of the
+status quo to shake things up.
+
+Probably should also reimplement the real-time advice for active learning. With pure
+active learning, maybe we don't even need much reinforcement? My mind is elevating to 
+a different plane now...
+
+Unfortunately only relying on convolutions mapped to actions, it probably doesn't do
+an amazing job learning representations, which i do want it to do so it can sorta
+generalize the advice data to say other levels.
+
+An idea that could add to this theme of "pseudo reinforcement" that would help my
+above idea work and extrapolate better to complex problems is some sort of segmented,
+constrained reward system. For instance, the simplest approach would be for the reward
+of an episode be mario's ending x position, which makes logical sense. (And then secondarily
+you can optimize for things like time). However that makes the learning space for 
+individual parts harder. In speedrunning, players use splits to better practice and
+understand how well or poorly they are doing at particular parts. I think this idea of
+splitting up segments and comparing how well you did for each segment is crucial to
+understanding a complex problem. Deciding where those splits are may be manual at first,
+but I think that would drastically improve the above approach. 
+
 -----
 
 ### TODO LIST
