@@ -2,6 +2,76 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
+# if num_layers >= 3, it just fails since h_out and w_out go to 0... i either need larger images or a smaller conv kernel
+# assuming default padding, stride, and dilations.
+class AdviceModelGeneral(torch.nn.Module):
+    def __init__(self, height, width, num_possible_actions, num_frames, num_layers):
+        super().__init__()
+        self.img_height = height
+        self.img_width = width
+        self.num_frames = num_frames
+        self.num_layers = num_layers
+
+        CONV_KERNEL_SIZE=3 # not sure if i'm 100% right here, will debug later
+        MAXPOOL_KERNEL_SIZE=3 #same here
+
+        self.conv_layers = []
+        self.pooling_layers = []
+        num_outputs = 0
+        c=0
+        h = self.img_height
+        w = self.img_width
+        d = self.num_frames # depth, for conv3d
+        for i in range(num_layers):
+            if num_frames == 1:
+                # for some reason, if you don't assign a variable to a layer, the _modules attribute
+                # of the model doesn't recognize it. maybe there's a way to track things as part of lists? which would
+                # be more ideal... self._modules.add()?
+                self.conv_layers.append(torch.nn.Conv2d(in_channels=CONV_KERNEL_SIZE ** i,
+                                                   out_channels=CONV_KERNEL_SIZE ** (i + 1),
+                                                   kernel_size=CONV_KERNEL_SIZE))
+                self.conv_layers[i].to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+                self.add_module("conv" + str(i), self.conv_layers[i])
+                c = CONV_KERNEL_SIZE ** (i + 1)
+                h = int(np.floor(h - (CONV_KERNEL_SIZE - 1) - 1 + 1))
+                w = int(np.floor(w - (CONV_KERNEL_SIZE - 1) - 1 + 1))
+                # todo: is this init still even good?
+                torch.nn.init.uniform_(self.conv_layers[i].weight, a=-0.05, b=0.05)
+
+                # self.pooling_layers.append(torch.nn.MaxPool2d(kernel_size=MAXPOOL_KERNEL_SIZE))
+                # self.pooling_layers[i].to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+                # self.add_module("maxpool" + str(i), self.pooling_layers[i])
+                # h_in = int(np.floor(((h_out-MAXPOOL_KERNEL_SIZE-2)/MAXPOOL_KERNEL_SIZE)+1))
+                # w_in = int(np.floor(((w_out - MAXPOOL_KERNEL_SIZE - 2) / MAXPOOL_KERNEL_SIZE) + 1))
+            if num_frames >= 4:
+                # https://heartbeat.fritz.ai/computer-vision-from-image-to-video-analysis-d1339cf23961
+                self.conv_layers.append(torch.nn.Conv3d(in_channels=CONV_KERNEL_SIZE ** i,
+                                                        out_channels=CONV_KERNEL_SIZE ** (i + 1),
+                                                        kernel_size=(1,CONV_KERNEL_SIZE,CONV_KERNEL_SIZE)))
+                self.conv_layers[i].to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+                self.add_module("conv" + str(i), self.conv_layers[i])
+                c = CONV_KERNEL_SIZE ** (i + 1)
+                h = int(np.floor(h - (CONV_KERNEL_SIZE - 1) - 1 + 1))
+                w = int(np.floor(w - (CONV_KERNEL_SIZE - 1) - 1 + 1))
+                # d = int(np.floor(d - (CONV_KERNEL_SIZE - 1) - 1 + 1))
+                torch.nn.init.uniform_(self.conv_layers[i].weight, a=-0.05, b=0.05)
+
+        self.linear = torch.nn.Linear(h * w * c * d,num_possible_actions)
+        torch.nn.init.uniform_(self.linear.weight, a=-0.05, b=0.05)
+
+    def forward(self, xb):
+        if self.num_frames == 1:
+            xb = xb.reshape(1, 1, self.img_height, self.img_width)
+        if self.num_frames >= 4:
+            xb = xb.reshape(1, 1, self.num_frames, self.img_height, self.img_width)
+        for i in range(self.num_layers):
+            xb = F.relu(self.conv_layers[i](xb))
+            # xb = self.pooling_layers[i](xb)
+        xb = xb.view(xb.size()[0], -1)
+        xb = torch.sigmoid(self.linear(xb))
+        # xb = torch.softmax(self.linear(xb), dim=1)
+        return xb
+
 class AdviceModel(torch.nn.Module):
     def __init__(self, height, width, num_possible_actions, num_frames):
         super().__init__()

@@ -20,6 +20,15 @@ Bringing files back: (todo: put my password in the command)
 `scp -P 6000 -r dstratton@localhost:PycharmProjects/advice-learning-remote/models/SuperMarioBros-v3_AdviceModel_21 models`
 consider using parsec
 
+Remote jupyter:
+https://amber-md.github.io/pytraj/latest/tutorials/remote_jupyter_notebook
+
+`ssh -p 6000 -N -f -L localhost:8888:localhost:8889 dstratton@localhost`
+`jupyter notebook --no-browser --port=8889`
+^ RUN THIS COMMAND FROM THE ROOT DIRECTORY OF advice-learning-remote
+https://stackoverflow.com/questions/39007571/running-jupyter-with-multiple-python-and-ipython-paths/
+
+
 There seems to be some interference with port forwarding and X forwarding????
 If local testing with X doesn't work, clsoe ports?
 

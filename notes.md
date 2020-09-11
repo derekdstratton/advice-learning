@@ -9,5 +9,10 @@ X coordinates of common end points:
 ~311.0: wrecked by goomba.
 722.0: 3rd pipe (the first big one)
 899.0: 4th pipe (the underworld one)
+1155.0: falling in the first pit
 ~1435.0: 2nd pitfall
 ~2010.0: goombas after the 4 ? blocks
+~1777.0: goombas underneath the 4 ? blocks
+
+analysis is pretty good
+with a histogram tbh

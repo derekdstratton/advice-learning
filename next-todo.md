@@ -73,6 +73,8 @@ torchvision, and pandas for train. test needs gym, gym-super-mario-bros, idk abo
 9. To better my efficiency, instead of having a static number of epochs, dynamically choose the
 number of epochs to keep going until you aren't learning any more
 
+Don't forget trying to link my previous inputs as data in the neural net! could be useful
+
 #### Convenience/Style
 - make it so git lfs tracks SuperMario dataset (i messed it up)
 
