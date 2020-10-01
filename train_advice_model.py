@@ -168,8 +168,8 @@ if __name__ == "__main__":
         dataset_path="SuperMarioBros-v3_data",
         img_processor="downsample",
         num_frames=1,
-        num_epochs=100,
+        num_epochs=150,
         num_layers=3,
-        output_directory="models/model8",
+        output_directory="models/model9",
         verbose=True
     )

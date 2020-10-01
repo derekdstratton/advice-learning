@@ -4,6 +4,8 @@ First set up a local port forward: (todo: put my password in the command)
 `ssh -L 6000:134.197.95.144:22 derekstratton@ubuntu.cse.unr.edu`
 I99J&^j91q8fbfnQJld$
 
+Tmux is needed to have it run without fear of connection go boom
+https://askubuntu.com/questions/8653/how-to-keep-processes-running-after-ending-ssh-session#:~:text=Press%20Ctrl%20%2D%20A%20then%20Ctrl,out%20of%20the%20remote%20box.
 
 Then just connect!
 `ssh -p 6000 dstratton@localhost`

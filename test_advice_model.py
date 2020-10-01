@@ -10,6 +10,19 @@ import models
 import image_processors
 import advice_dataset
 import pandas as pd
+from torch.utils.data import WeightedRandomSampler, Dataset, DataLoader
+
+class EpisodeDataset(Dataset):
+    def __init__(self, x, y):
+        x = torch.stack(x)
+        self.x = torch.Tensor(x)
+        self.y = torch.Tensor(y)
+    def __len__(self):
+        return len(self.x)
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        return self.x[idx], int(self.y[idx].item())
 
 # todo: better style to make another method that takes in a model and an info object. more flexible
 
@@ -34,6 +47,10 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True, out
 
     # the main loop for running the game
     for episode in range(0, num_epochs):
+        # todo: consider if better as array or list?
+        episode_history_x = []
+        episode_history_y = []
+
         farthest = 0
         state = env.reset()
         # a sliding window list containing the frames up to the current one to analyze
@@ -69,8 +86,12 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True, out
             weights = y_pred.detach().numpy().reshape(adv_dataset.num_possible_actions, )  # maybe this probability can
             # also be adjusted based on the reward?
             action = np.random.choice(np.arange(0, adv_dataset.num_possible_actions), p=weights)
+            # TODO: add possible keyboard actions to train on
 
             state2, reward, done, info = env.step(action)
+
+            episode_history_x.append(torch.cat(prev_frames))
+            episode_history_y.append(action)
 
             # debugging
             # print(y_pred.detach().numpy()) # the array of predicted actions at a given state
@@ -97,6 +118,45 @@ def test_model_on_game(model, training_info, num_epochs=100, visualize=True, out
                     # todo: time is currently all wrong.
                     print("Ending Time: " + str(info['time']))
                 x_pos_arr[episode] = farthest
+
+                train = True
+                if episode >= 1:
+                    last_10_avg = np.mean(x_pos_arr[episode-1:episode])
+                else:
+                    last_10_avg = 1000
+                print("Last 10 average: " + str(last_10_avg))
+                # todo: right now just saayin if farthest > 1000, which is not robust but might show results now????
+                if train and farthest > 1000:
+                    loss_fn = torch.nn.BCELoss()
+                    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+                    # assuming just 1 epoch of training? lower the learning rate a bit
+                    dataset = EpisodeDataset(episode_history_x, episode_history_y)
+                    weights = np.array([np.count_nonzero(dataset.y.numpy()==aa) for aa in range(0, 7)])
+                    weights_balanced = 1. / weights
+                    actions = dataset.y.numpy().astype(dtype=np.int32)
+                    samples_weight = torch.tensor(np.array(weights_balanced)[actions])
+                    # samples_weight = samples_weight.to(dev)
+                    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+                    # return dataset, model # debugging
+                    loader = DataLoader(dataset, sampler=sampler)
+
+                    # todo: this data is still unbalanced in episode_history. and needs sampled.
+                    print('training')
+                    for epoch in range(0, 40):
+                        print(epoch)
+                        for x, y_action in loader:
+                            # x.to(dev)
+                            # y_chosen.to(dev)
+                            y_model = model(x)
+                            y_chosen = np.zeros(adv_dataset.num_possible_actions)
+                            y_chosen[y_action] = 1
+                            y_chosen = torch.Tensor(y_chosen)
+                            loss = loss_fn(y_model, y_chosen)
+                            # update the weights based on the loss
+                            optimizer.zero_grad()
+                            loss.backward()
+                            optimizer.step()
+                    print('done training')
                 break
     env.close()
 
@@ -129,4 +189,4 @@ def test_model_on_game_from_file(model_input_directory, num_epochs=100, visualiz
 
 if __name__ == "__main__":
     # in the future, parse command line args for convenience running files
-    df, model = test_model_on_game_from_file("models/model8", num_epochs=100, visualize=False, verbose=True)
+    df, model = test_model_on_game_from_file("models/model9", num_epochs=200, visualize=False, verbose=True)
